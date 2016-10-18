@@ -1,0 +1,35 @@
+{
+  "player": {
+    "speed": 240,
+    "turbo_speed": 480,
+    "bullet_speed": 650
+  },
+  "weapons": {
+    "basic": {
+      "fire_rate": 320,
+      "damage": 20
+    },
+    "machine_gun": {
+      "fire_rate": 180,
+      "damage": 15
+    },
+    "misile": {
+      "damage": 50
+    },
+    "selected_color": "#2DA92F",
+    "unselected_color": "#ff0044",
+    "unavailable_color": "#6c6f6c"
+  },
+  "enemies": {
+    "small": {
+      "sprite": "yellowEnemy",
+      "health": 40,
+      "damage": 5
+    },
+    "big": {
+      "sprite": "redEnemy",
+      "health": 80,
+      "damage": 10
+    }
+  }
+}
