@@ -2,7 +2,8 @@
   "player": {
     "speed": 240,
     "turbo_speed": 480,
-    "bullet_speed": 650
+    "bullet_speed": 650,
+    "bomb_ready": 15
   },
   "weapons": {
     "basic": {
@@ -18,17 +19,18 @@
     },
     "selected_color": "#2DA92F",
     "unselected_color": "#ff0044",
-    "unavailable_color": "#6c6f6c"
+    "unavailable_color": "#6c6f6c",
+    "ready_color": "#BBA31F"
   },
   "enemies": {
     "small": {
       "sprite": "yellowEnemy",
-      "health": 40,
+      "health": 20,
       "damage": 5
     },
     "big": {
       "sprite": "redEnemy",
-      "health": 80,
+      "health": 60,
       "damage": 10
     }
   }

@@ -6,9 +6,9 @@ Chaos.Enemy = function(game, x, y, key, health, enemyBullets, target, hit_power)
   this.game = game;
   this.target = target;
   this.anchor.setTo(0.5);
-  this.game.physics.arcade.enable(this);
-  this.enableBody = true;
-  this.body.allowCollision = true;
+  // this.game.physics.arcade.enable(this);
+  // this.enableBody = true;
+  // this.body.allowCollision = true;
   this.animations.add('getHit', [0, 1, 2, 1, 0], 25, false);
   this.health = health;
   this.hit_power = hit_power;
@@ -25,24 +25,6 @@ Chaos.Enemy.prototype.constructor = Chaos.Enemy;
 
 Chaos.Enemy.prototype.update = function() {
   this.game.physics.arcade.moveToObject(this, this.target, 100);
-  //bounce on the borders
-  // if(this.position.x < 0.05 * this.game.world.width) {
-  //   this.position.x = 0.05 * this.game.world.width + 2;
-  //   this.body.velocity.x *= -1;
-  // }
-  // else if(this.position.x > 0.95 * this.game.world.width) {
-  //   this.position.x = 0.95 * this.game.world.width - 2;
-  //   this.body.velocity.x *= -1;
-  // }
-
-  // if(this.position.y > this.game.world.height) {
-  //   this.position.y = 0.95 * this.game.world.height + 2;
-  //   this.body.velocity.y *= -1;
-  // }
-  // if(this.position.y < this.game.world.bounds.top) {
-  //   this.position.y = 0.05 * this.game.world.height - 2;
-  //   this.body.velocity.y *= -1;
-  // }
 };
 
 Chaos.Enemy.prototype.damage = function(amount) {
@@ -77,7 +59,10 @@ Chaos.Enemy.prototype.shoot = function() {
   else {
     bullet.reset(this.x, this.y);
   }
-  console.log(this.angle);
-  this.game.physics.arcade.velocityFromAngle(this.angle, 200, bullet.body.velocity);
-  // bullet.body.velocity.y = 100;
+  var random_value_x = Math.floor(Math.random()*2)
+  var random_multiplier_x = (random_value_x == 0 ? -1 : 1 )
+  var random_value_y = Math.floor(Math.random()*2)
+  var random_multiplier_y = (random_value_y == 0 ? -1 : 1 )
+  bullet.body.velocity.y = 150 * random_multiplier_y;
+  bullet.body.velocity.x = 150 * random_multiplier_x;
 };
