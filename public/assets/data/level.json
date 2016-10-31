@@ -33,5 +33,17 @@
       "health": 60,
       "damage": 10
     }
+  },
+  "device": {
+    "desktop": {
+      "enemy_generation": 1,
+      "big_enemy_generation": 3,
+      "asteroid_generation": 5
+    },
+    "mobile": {
+      "enemy_generation": 2,
+      "big_enemy_generation": 6,
+      "asteroid_generation": 8
+    }
   }
 }

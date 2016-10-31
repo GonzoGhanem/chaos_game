@@ -6,6 +6,12 @@ Chaos.Game = {
   init: function() {
     //use all the area, don't distort scale
     this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    this.device = 'desktop';
+    if (!this.game.device.desktop) { 
+      this.is_mobile = true;
+      this.device = 'mobile';
+      // this.game.stage.scale.startFullScreen();
+    }
     this.scale.pageAlignHorizontally = true;
     this.scale.pageAlignVertically = true;
     //initiate physics system
@@ -37,6 +43,14 @@ Chaos.Game = {
     this.load.audio('blaster', 'assets/audio/blaster.mp3');
     this.load.audio('explode', 'assets/audio/explosion.mp3');
     this.load.audio('death', 'assets/audio/death.mp3');
+
+    if(this.is_mobile){
+      this.load.image('arrow_up', 'assets/images/flecha_arriba.png');
+      this.load.image('arrow_down', 'assets/images/flecha_abajo.png');
+      this.load.image('arrow_left', 'assets/images/flecha_izq.png');
+      this.load.image('arrow_right', 'assets/images/flecha_derecha.png');
+      this.load.image('bomb_image', 'assets/images/boton_bomba.png');
+    }
 
   },
   //executed after everything is loaded
@@ -105,8 +119,8 @@ Chaos.Game = {
     this.enemies.setAll('checkWorldBounds', true);
     this.enemies.setAll('outOfBoundsKill', true);
     this.enemies.setAll('body.allowCollision', true);
-    this.game.time.events.repeat(Phaser.Timer.SECOND * 1, 100, this.createEnemy.bind(this), this.game);
-    this.game.time.events.repeat(Phaser.Timer.SECOND * 3, 100, this.createBigEnemy.bind(this), this.game);
+    this.game.time.events.repeat(Phaser.Timer.SECOND * this.game_constants.device[this.device].enemy_generation, 100, this.createEnemy.bind(this), this.game);
+    this.game.time.events.repeat(Phaser.Timer.SECOND * this.game_constants.device[this.device].big_enemy_generation, 100, this.createBigEnemy.bind(this), this.game);
 
     //ASTEROIDES
     this.asteroids = this.add.group();
@@ -115,11 +129,18 @@ Chaos.Game = {
     this.asteroids.setAll('checkWorldBounds', true);
     this.asteroids.setAll('outOfBoundsKill', true);
     this.asteroids.setAll('body.allowCollision', true);
-    this.game.time.events.repeat(Phaser.Timer.SECOND * 5, 100, this.createAsteroid.bind(this), this.game);
+    this.game.time.events.repeat(Phaser.Timer.SECOND * this.game_constants.device[this.device].asteroid_generation, 100, this.createAsteroid.bind(this), this.game);
   },
   update: function() {
+    this.player.body.angularVelocity = 0;
+    this.player.body.velocity.x = 0;
+    this.player.body.velocity.y = 0;
     this.listenToControls();
+    if(this.is_mobile) {
+      this.setMobileEvents();
+    }
     this.listenToMoveControls();
+
 
     this.game.physics.arcade.overlap(this.enemies, this.player, this.playerDead.bind(this));
     this.game.physics.arcade.collide(this.enemies, this.enemies);
@@ -143,30 +164,59 @@ Chaos.Game = {
     this.playerBullets.setAll('checkWorldBounds', true);
     this.playerBullets.setAll('outOfBoundsKill', true);
   },
-  listenToMoveControls: function() {
-    this.player.body.angularVelocity = 0;
-    this.player.body.velocity.x = 0;
-    this.player.body.velocity.y = 0;
+  setMobileEvents: function() {
+    this.up_arrow_button = this.add.button(50, this.game.world.height-250, 'arrow_up');
+    this.up_arrow_button.events.onInputOver.add(function(){this.moving_forward = true;}.bind(this));
+    this.up_arrow_button.events.onInputUp.add(function(){this.moving_forward = false;}.bind(this));
 
-    if (this.cursors.left.isDown)
+    this.down_arrow_button = this.add.button(50, this.game.world.height-150, 'arrow_down');
+    this.down_arrow_button.events.onInputOver.add(function(){this.moving_back = true;}.bind(this));
+    this.down_arrow_button.events.onInputUp.add(function(){this.moving_back = false;}.bind(this));
+
+    this.left_arrow_button = this.add.button(1050, this.game.world.height-150, 'arrow_left');
+    this.left_arrow_button.events.onInputOver.add(function(){this.moving_left = true;}.bind(this));
+    this.left_arrow_button.events.onInputUp.add(function(){this.moving_left = false;}.bind(this));
+
+    this.right_arrow_button = this.add.button(1200, this.game.world.height-150, 'arrow_right');
+    this.right_arrow_button.events.onInputOver.add(function(){this.moving_right = true;}.bind(this));
+    this.right_arrow_button.events.onInputUp.add(function(){this.moving_right = false;}.bind(this));
+
+    this.bomb_button = this.add.button(1200, this.game.world.height-300, 'bomb_image');
+    this.bomb_button.visible = false;
+    this.bomb_button.events.onInputOver.add(function(){this.bombing = true;}.bind(this));
+    this.bomb_button.events.onInputUp.add(function(){this.bombing = false;}.bind(this));
+
+  },
+  moveForward: function(turbo) {
+    this.player.is_turbo = turbo;
+    if(turbo){
+      this.turbo_text.setStyle(this.getTextStyle(this.game_constants.weapons.selected_color));
+      this.game.physics.arcade.velocityFromAngle(this.player.angle, this.game_constants.player.turbo_speed, this.player.body.velocity);
+    } else {
+      this.game.physics.arcade.velocityFromAngle(this.player.angle, this.game_constants.player.speed, this.player.body.velocity);
+    }
+  },
+  listenToMoveControls: function() {
+    if (this.cursors.left.isDown || this.moving_left)
     {
       this.player.body.angularVelocity = -200;
     }
-    else if (this.cursors.right.isDown)
+    else if (this.cursors.right.isDown || this.moving_right)
     {
       this.player.body.angularVelocity = 200;
     }
-
-    if (this.cursors.up.isDown && this.controls.turbo.isDown)
+    if ((this.cursors.up.isDown || this.moving_forward) && this.controls.turbo.isDown)
     {
       this.player.is_turbo = true;
+      // this.moveForward(true);
       this.turbo_text.setStyle(this.getTextStyle(this.game_constants.weapons.selected_color));
       this.game.physics.arcade.velocityFromAngle(this.player.angle, this.game_constants.player.turbo_speed, this.player.body.velocity);
-    } else if (this.cursors.up.isDown) {
+    } else if (this.cursors.up.isDown || this.moving_forward) {
+      // this.moveForward(false);
       this.player.is_turbo = false;
       this.game.physics.arcade.velocityFromAngle(this.player.angle, this.game_constants.player.speed, this.player.body.velocity);
     }
-    if (this.cursors.down.isDown) {
+    if (this.cursors.down.isDown || this.moving_back) {
       this.player.is_turbo = false;
       this.game.physics.arcade.velocityFromAngle(this.player.angle, - this.game_constants.player.speed, this.player.body.velocity);
     }
@@ -175,7 +225,7 @@ Chaos.Game = {
     }
   },
   listenToControls: function() {
-    if(this.controls.shoot.isDown) {
+    if(this.controls.shoot.isDown || this.is_mobile) {
       this.shoot();
     }
     if(this.controls.basic.isDown) {
@@ -183,7 +233,7 @@ Chaos.Game = {
       this.basic_weapon_text.setStyle(this.getTextStyle(this.game_constants.weapons.selected_color));
       this.machine_gun_weapon_text.setStyle(this.getTextStyle(this.game_constants.weapons.unselected_color));
     }
-    if(this.controls.bomb.isDown) {
+    if(this.controls.bomb.isDown || this.bombing) {
       this.fire_bomb();
     }
     if(this.controls.machine_gun.isDown) {
@@ -200,7 +250,6 @@ Chaos.Game = {
   togglePause: function(){
     this.game.paused = !this.game.paused;
     this.pause_text.setText('PAUSA');
-    console.log(this.game.paused);
     this.pause_text.visible = !this.pause_text.visible;
   },
   shoot: function() {
@@ -251,21 +300,21 @@ Chaos.Game = {
     }
     this.player_score_text.setText("Puntaje: " + this.player.score);
     if(this.player.bomb_readiness == this.game_constants.player.bomb_ready){
-      this.bomb_ready();
+      this.bombReady();
     }
   },
   createEnemy: function() {
     var random_position_y = Math.floor(Math.random()*(1-0+1)+0);
     var verticals = ['top', 'bottom'];
     var enemy_info = this.game_constants.enemies['small']
-    var enemy = new Chaos.Enemy(this.game, this.game.world.randomX, this.game.world.bounds[verticals[random_position_y]], enemy_info.sprite, enemy_info.health, this.enemyBullets, this.player, enemy_info.damage);
+    var enemy = new Chaos.Enemy(this.game, this.game.world.randomX, this.game.world.bounds[verticals[random_position_y]], enemy_info.sprite, enemy_info.health, this.enemyBullets, this.player, enemy_info.damage, !this.is_mobile);
     this.enemies.add(enemy);
   },
   createBigEnemy: function() {
     var random_position_y = Math.floor(Math.random()*(1-0+1)+0);
     var verticals = ['top', 'bottom'];
     var enemy_info = this.game_constants.enemies['big']
-    var enemy = new Chaos.Enemy(this.game, this.game.world.randomX, this.game.world.bounds[verticals[random_position_y]], enemy_info.sprite, enemy_info.health, this.enemyBullets, this.player, enemy_info.damage);
+    var enemy = new Chaos.Enemy(this.game, this.game.world.randomX, this.game.world.bounds[verticals[random_position_y]], enemy_info.sprite, enemy_info.health, this.enemyBullets, this.player, enemy_info.damage, !this.is_mobile);
     this.enemies.add(enemy);
   },
   createAsteroid: function() {
@@ -283,13 +332,19 @@ Chaos.Game = {
     killer.damage(1);
     this.explode.play();
   },
-  bomb_ready: function(){
+  bombReady: function(){
+    if(this.is_mobile){
+      this.bomb_button.visible = true;
+    }
     this.game_constants.player.bomb_ready += 5;
     this.bomb_weapon_text.setStyle(this.getTextStyle(this.game_constants.weapons.ready_color));
     this.bomb_ready_text.visible = true;
     setTimeout(function(){this.bomb_ready_text.visible = false}.bind(this), 3000 );
   },
   fire_bomb: function(){
+    if(this.is_mobile){
+      this.bomb_button.visible = false;
+    }
     this.player.bomb_readiness = 0;
     this.player.score += this.enemies.countLiving() * 50;
     this.pause_text.setText('KABOOOOOMMMMM!!!!');

@@ -1,6 +1,6 @@
 var Chaos = Chaos || {};
 
-Chaos.Enemy = function(game, x, y, key, health, enemyBullets, target, hit_power) {
+Chaos.Enemy = function(game, x, y, key, health, enemyBullets, target, hit_power, can_shoot) {
   Phaser.Sprite.call(this, game, x, y, key);
 
   this.game = game;
@@ -14,10 +14,12 @@ Chaos.Enemy = function(game, x, y, key, health, enemyBullets, target, hit_power)
   this.hit_power = hit_power;
 
   // this.game.physics.arcade.moveToObject(this, this.target, 1, 100);
-  this.enemyBullets = enemyBullets;
-  this.enemyTimer = this.game.time.create(false);
-  this.enemyTimer.start();
-  this.scheduleShooting();
+  if(can_shoot){
+    this.enemyBullets = enemyBullets;
+    this.enemyTimer = this.game.time.create(false);
+    this.enemyTimer.start();
+    this.scheduleShooting();
+  }
 };
 
 Chaos.Enemy.prototype = Object.create(Phaser.Sprite.prototype);
