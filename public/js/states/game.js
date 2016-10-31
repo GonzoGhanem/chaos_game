@@ -13,6 +13,7 @@ Chaos.Game = {
     this.game.world.bounds.bottomLeft = {x: 0, y: this.game.world.bounds.bottom};
     this.cursors = this.game.input.keyboard.createCursorKeys()
     this.controls = {
+      start: this.game.input.keyboard.addKey(Phaser.Keyboard.ENTER),
       shoot: this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR),
       basic: this.game.input.keyboard.addKey(Phaser.Keyboard.Q),
       machine_gun: this.game.input.keyboard.addKey(Phaser.Keyboard.W),
@@ -33,9 +34,19 @@ Chaos.Game = {
     this.load.spritesheet('redEnemy', 'assets/images/red_enemy_big.png', 98, 90, 3, 1, 1);
     this.load.image('asteroid', 'assets/images/asteroid.png');
     this.load.json('constants', 'assets/data/level.json');
+    this.load.audio('blaster', 'assets/audio/blaster.mp3');
+    this.load.audio('explode', 'assets/audio/explosion.mp3');
+    this.load.audio('death', 'assets/audio/death.mp3');
+
   },
   //executed after everything is loaded
   create: function() {
+    //Sounds first, need to decode
+    this.blaster = this.game.add.audio('blaster');
+    this.explode = this.game.add.audio('explode');
+    this.bomb_explosion = this.game.add.audio('death');
+    // this.game.sound.setDecodedCallback([ blaster ], start, this);
+
     this.game.paused = false;
     this.game_constants = this.game.cache.getJSON('constants');
     this.background = this.add.tileSprite(0, 50, this.game.world.width, this.game.world.height - 50, 'space');    
@@ -60,11 +71,11 @@ Chaos.Game = {
 
     this.bomb_weapon_text = this.game.add.text(this.game.world.bounds.left + 500, this.game.world.bounds.top + 10, "Bomba (E)", this.getTextStyle(this.game_constants.weapons.unavailable_color));
 
-    this.turbo_text = this.game.add.text(this.game.world.bounds.left + 650, this.game.world.bounds.top + 10, "Turbo (SHIFT)", this.getTextStyle(this.game_constants.weapons.unselected_color));
+    this.turbo_text = this.game.add.text(this.game.world.bounds.left + 700, this.game.world.bounds.top + 10, "Turbo (SHIFT)", this.getTextStyle(this.game_constants.weapons.unselected_color));
 
+    this.player_score_text = this.game.add.text(this.game.world.bounds.left + 1000, this.game.world.bounds.top + 10, "Puntaje: 0", this.getTextStyle(this.game_constants.weapons.unselected_color));
+    
     this.player_life_text = this.game.add.text(this.game.world.bounds.left + 1200, this.game.world.bounds.top + 10, "Vida: 100", this.getTextStyle(this.game_constants.weapons.unselected_color));
-
-    this.player_score_text = this.game.add.text(this.game.world.bounds.left + 900, this.game.world.bounds.top + 10, "Puntaje: 0", this.getTextStyle(this.game_constants.weapons.unselected_color));
 
     this.pause_text = this.game.add.text(this.game.world.centerX - 100, this.game.world.centerY, 'PAUSA', {
       font: "40px Arial",
@@ -94,8 +105,8 @@ Chaos.Game = {
     this.enemies.setAll('checkWorldBounds', true);
     this.enemies.setAll('outOfBoundsKill', true);
     this.enemies.setAll('body.allowCollision', true);
-    this.game.time.events.repeat(Phaser.Timer.SECOND * 1.5, 100, this.createEnemy.bind(this), this.game);
-    this.game.time.events.repeat(Phaser.Timer.SECOND * 6, 100, this.createBigEnemy.bind(this), this.game);
+    this.game.time.events.repeat(Phaser.Timer.SECOND * 1, 100, this.createEnemy.bind(this), this.game);
+    this.game.time.events.repeat(Phaser.Timer.SECOND * 3, 100, this.createBigEnemy.bind(this), this.game);
 
     //ASTEROIDES
     this.asteroids = this.add.group();
@@ -111,6 +122,7 @@ Chaos.Game = {
     this.listenToMoveControls();
 
     this.game.physics.arcade.overlap(this.enemies, this.player, this.playerDead.bind(this));
+    this.game.physics.arcade.collide(this.enemies, this.enemies);
     this.game.physics.arcade.overlap(this.player, this.asteroids, this.playerDead.bind(this));
     this.game.physics.arcade.overlap(this.enemies, this.asteroids, this.killTheFucker.bind(this));
     this.game.physics.arcade.overlap(this.player, this.enemyBullets, this.playerGetDamaged.bind(this));
@@ -179,12 +191,16 @@ Chaos.Game = {
       this.machine_gun_weapon_text.setStyle(this.getTextStyle(this.game_constants.weapons.selected_color));
       this.basic_weapon_text.setStyle(this.getTextStyle(this.game_constants.weapons.unselected_color));
     }
-    this.controls.pause.onDown.add(this.togglePause.bind(this));
-      
+    this.controls.pause.onDown.add(this.togglePause.bind(this));      
+  },
+  restartGame: function(){
+    this.game.paused = false;
+    Chaos.game.state.start('Game');
   },
   togglePause: function(){
     this.game.paused = !this.game.paused;
     this.pause_text.setText('PAUSA');
+    console.log(this.game.paused);
     this.pause_text.visible = !this.pause_text.visible;
   },
   shoot: function() {
@@ -196,6 +212,7 @@ Chaos.Game = {
     } else {
       bullet.reset(this.player.x, this.player.y);
     }
+    this.blaster.play();
     this.game.physics.arcade.velocityFromAngle(this.player.angle, this.game_constants.player.bullet_speed, bullet.body.velocity);
     this.next_shoot = this.time.now + this.game_constants.weapons[this.player.selected_weapon].fire_rate;
   },
@@ -209,16 +226,18 @@ Chaos.Game = {
   playerGetDamaged: function(player, bullet) {
     player.damage(bullet.hit_power);
     bullet.kill();
-    this.player_life_text.setText("Health: " + player.health);
+    this.player_life_text.setText("Vida: " + player.health);
     if(player.health <= 0){
       this.playerDead();
     }
   },
   playerDead: function(){ 
-    setTimeout(function(){this.game.state.start('Game')}, 10000);
-    this.game.paused = true;
-    this.pause_text.setText("GAME OVER\nPuntaje total: " + this.player.score);
+    // setTimeout(function(){this.game.state.start('Game')}, 10000);
+    this.pause_text.setText("GAME OVER\nPuntaje total: " + this.player.score+"\nENTER para volver a jugar");
     this.pause_text.visible = true;
+    // this.bomb_explosion.play();
+    this.controls.start.onDown.add(this.restartGame.bind(this));
+    this.game.paused = true;
   },
   enemyGetDamaged: function(enemy, bullet) {
     bullet.kill();
@@ -226,6 +245,7 @@ Chaos.Game = {
     if(enemy.health > 0) {
       this.player.score += 5;
     } else {
+      this.explode.play();
       this.player.score += 50;
       this.player.bomb_readiness += 1;
     }
@@ -260,6 +280,8 @@ Chaos.Game = {
   },
   killTheFucker: function(fucker, killer) {
     fucker.damage(1000);
+    killer.damage(1);
+    this.explode.play();
   },
   bomb_ready: function(){
     this.game_constants.player.bomb_ready += 5;
@@ -271,6 +293,8 @@ Chaos.Game = {
     this.player.bomb_readiness = 0;
     this.player.score += this.enemies.countLiving() * 50;
     this.pause_text.setText('KABOOOOOMMMMM!!!!');
+    this.bomb_weapon_text.setStyle(this.getTextStyle(this.game_constants.weapons.unavailable_color));
+    this.bomb_explosion.play();
     this.pause_text.visible = true;
     this.enemies.forEachAlive(function(enemy){
       enemy.damage(1000);
