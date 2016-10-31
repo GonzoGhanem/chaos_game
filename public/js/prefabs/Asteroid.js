@@ -6,6 +6,7 @@ Chaos.Asteroid = function(game, x, y, key, target) {
   this.game = game;
   this.target = target;
   //enable physics
+  this.health = 2;
   this.anchor.setTo(0.5);
   this.checkWorldBounds = true;
   this.outOfBoundsKill = true;
